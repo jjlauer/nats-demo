@@ -21,16 +21,9 @@ public class NatsStreamPublisher {
             System.out.println("Connected to nats server!");
 
             JetStream js = nc.jetStream();
-            JetStreamManagement jsm = nc.jetStreamManagement();
-
-            jsm.addStream(StreamConfiguration.builder()
-                .name("request-stream")
-                .storageType(StorageType.File)
-                .subjects("request.*")
-                .build());
 
             PublishAck pa = js.publish(NatsMessage.builder()
-                .subject("request.priority")
+                .subject("REQUESTS.priority")
                 .data("Hello World " + Instant.now())
                 .build());
 
