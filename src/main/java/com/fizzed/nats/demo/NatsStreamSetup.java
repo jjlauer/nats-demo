@@ -35,7 +35,7 @@ public class NatsStreamSetup {
             si1 = jsm.addStream(StreamConfiguration.builder()
                 .name(streamName1)
                 .storageType(StorageType.File)
-                .subjects("REQUESTS.*")
+                .subjects("REQUESTS.priority")
                 .retentionPolicy(RetentionPolicy.WorkQueue)
                 .discardPolicy(DiscardPolicy.Old)
                 .build());

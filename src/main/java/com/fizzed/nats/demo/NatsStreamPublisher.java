@@ -15,6 +15,7 @@ public class NatsStreamPublisher {
         Options o = new Options.Builder()
             .server("nats://localhost:14222")
             .maxReconnects(-1)
+            .connectionName(NatsStreamPublisher.class.getCanonicalName())
             .build();
 
         try (Connection nc = Nats.connect(o)) {
@@ -27,8 +28,7 @@ public class NatsStreamPublisher {
                 .data("Hello World " + Instant.now())
                 .build());
 
-            System.out.printf("Published message on stream %s, seqno %d.\n",
-                pa.getStream(), pa.getSeqno());
+            System.out.printf("Published message: " + pa);
         }
     }
 

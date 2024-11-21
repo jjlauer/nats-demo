@@ -13,6 +13,7 @@ public class NatsPublisher {
             .server("nats://localhost:14222")
             .maxReconnects(-1)
             .reportNoResponders()
+            .pedantic()
             .errorListener(new ErrorListener() {
                 @Override
                 public void messageDiscarded(Connection conn, Message msg) {
@@ -52,8 +53,6 @@ public class NatsPublisher {
             System.out.println("Published message");
 
             nc.flush(Duration.ofSeconds(5));
-
-            Thread.sleep(100000L);
         }
     }
 

@@ -29,7 +29,7 @@ public class NatConsumer {
                     }
                 });
 
-            Thread.sleep(10000L);
+            Thread.sleep(100000000L);
         }
     }
 
