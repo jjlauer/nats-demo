@@ -4,6 +4,7 @@ import io.nats.client.*;
 import io.nats.client.api.PublishAck;
 import io.nats.client.api.StorageType;
 import io.nats.client.api.StreamConfiguration;
+import io.nats.client.impl.Headers;
 import io.nats.client.impl.NatsMessage;
 
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,10 @@ public class NatsStreamPublisher {
 
             PublishAck pa = js.publish(NatsMessage.builder()
                 .subject("REQUESTS.priority")
+                    .headers(new Headers()
+                        .add("Content-Type", "application/json")
+                        .add("Sequence-Id", System.currentTimeMillis()+"")
+                    )
                 .data("Hello World " + Instant.now())
                 .build());
 

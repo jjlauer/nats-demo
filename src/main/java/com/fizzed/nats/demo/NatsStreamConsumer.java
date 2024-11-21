@@ -1,21 +1,27 @@
 package com.fizzed.nats.demo;
 
 import io.nats.client.*;
+import io.nats.client.impl.NatsJetStreamMetaData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 abstract public class NatsStreamConsumer {
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public void execute() throws Exception {
         final Options o = new Options.Builder()
             .server("nats://localhost:14222")
             .maxReconnects(-1)
+            .verbose()
             .connectionName(this.getClass().getCanonicalName())
             .build();
 
         try (Connection nc = Nats.connect(o)) {
-            System.out.println("Connected to nats server!");
+            log.info("Connected to nats server!");
 
             final JetStream js = nc.jetStream();
 
@@ -29,25 +35,57 @@ abstract public class NatsStreamConsumer {
 
             //jss.pull(1);
 
-            while (true) {
-                System.out.println("Waiting for next message...");
+            final Thread subscriberThread = new Thread(() -> {
+               while (true) {
+                   try {
+                       log.info("Waiting for next message...");
 
-                //Message message = jss.nextMessage(Duration.ofSeconds(100000));
 
-                final List<Message> messages = jss.fetch(1, Duration.ofSeconds(10000));
-                final Message message = messages != null && !messages.isEmpty() ? messages.get(0) : null;
+                       final List<Message> messages = jss.fetch(1, Duration.ofSeconds(1000));
+                       final Message message = messages != null && !messages.isEmpty() ? messages.get(0) : null;
 
-                if (message != null) {
-                    System.out.printf("Consumed message: sid=%s, headers=%s, subject=%s, data=%s\n",
-                        message.getSID(),
-                        message.getHeaders(), message.getSubject(), new String(message.getData()));
+                       if (message != null) {
+                           NatsJetStreamMetaData md = message.metaData();
+                           final long seqNo = md.streamSequence();
+                           final ZonedDateTime ts = md.timestamp();
 
-                    // if you don't ack the message, problems arise and it'll eventually be redelivered and retried
-                    message.ack();
-                } else {
-                    System.out.println("No message received");
+                           log.info("Consumed message: seqNo={}, ts={}, headers={}, subject={}, data={}",
+                               seqNo, ts, message.getHeaders(), message.getSubject(), new String(message.getData()));
+
+                           // if you don't ack the message, problems arise and it'll eventually be redelivered and retried
+                           message.ack();
+                       } else {
+                           log.info("No message received");
+                       }
+                   } catch (Exception e) {
+                       log.error("Error consuming message", e);
+                       try {
+                           Thread.sleep(5000L);
+                       } catch (InterruptedException ex) {
+                           log.error("Error sleeping", ex);
+                       }
+                   }
                 }
-            }
+            });
+
+            nc.addConnectionListener(new ConnectionListener() {
+                @Override
+                public void connectionEvent(Connection conn, Events type) {
+                    System.out.println("Connection event type=" + type);
+                    if (type == Events.DISCONNECTED || type == Events.CLOSED) {
+                        subscriberThread.interrupt();
+                        /*try {
+                            nc.close();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }*/
+                    }
+                }
+            });
+
+            subscriberThread.start();
+            subscriberThread.join();
+
         }
     }
 
